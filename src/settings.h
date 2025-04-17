@@ -1,0 +1,1 @@
+#define TOOTH_DURATION 20
