@@ -7,8 +7,30 @@
 #define SECOND_COUNTER 100
 #define SECOND_TIMER 65536 - (F_CPU / 12 / SECOND_COUNTER)
 
-unsigned int seconds = 0;
-unsigned long milliseconds = 0;
+volatile unsigned int seconds = 0;
+volatile unsigned long milliseconds = 0;
+
+unsigned int readSeconds()
+{
+    unsigned int value;
+    unsigned char enabled = EA;
+
+    EA = 0;
+    value = seconds;
+    EA = enabled;
+    return value;
+}
+
+unsigned long readMilliseconds()
+{
+    unsigned long value;
+    unsigned char enabled = EA;
+
+    EA = 0;
+    value = milliseconds;
+    EA = enabled;
+    return value;
+}
 
 void toggleSRCLK()
 {
@@ -91,8 +113,8 @@ void wait(unsigned int duration)
 
 void waitMs(unsigned long duration)
 {
-    unsigned long start = milliseconds;
-    while (milliseconds - start < duration)
+    unsigned long start = readMilliseconds();
+    while (readMilliseconds() - start < duration)
         ;
 }
 
@@ -102,8 +124,8 @@ void loop()
     do
     {
         unsigned char v = i;
-        unsigned int start = seconds;
-        while (seconds - start < TOOTH_DURATION)
+        unsigned int start = readSeconds();
+        while (readSeconds() - start < TOOTH_DURATION)
         {
             writeByte(v);
             waitMs(500);
@@ -116,9 +138,13 @@ void loop()
 
 void powerDown()
 {
+    unsigned char enabled = EA;
+
     writeByte(0x00);
+    EA = 0;
     seconds = 0;
     milliseconds = 0;
+    EA = enabled;
     PCON |= PD;
 }
 
